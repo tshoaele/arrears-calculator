@@ -54,39 +54,13 @@
     padding-right: env(safe-area-inset-right, 0);
   }
 
-  /* ── SHELL: wider to accommodate side-by-side layout ── */
+  /* ── SHELL ── */
   .shell {
     width: 100%;
-    max-width: 960px;
+    max-width: 520px;
     padding: 2rem 1.25rem 3rem;
     display: flex;
     flex-direction: column;
-  }
-
-  /* ── MAIN LAYOUT: two columns on wide screens ── */
-  .main-layout {
-    display: flex;
-    flex-direction: column;
-    gap: 1.5rem;
-  }
-
-  @media (min-width: 640px) {
-    .main-layout {
-      flex-direction: row;
-      align-items: flex-start;
-      gap: 2rem;
-    }
-
-    .input-panel {
-      flex: 0 0 320px;
-      position: sticky;
-      top: 1.5rem;
-    }
-
-    .results-panel {
-      flex: 1;
-      min-width: 0;
-    }
   }
 
   /* ── HEADER ── */
@@ -345,23 +319,6 @@
     gap: 12px;
   }
 
-  @media (min-width: 640px) {
-    .results-grid {
-      grid-template-columns: 1fr 1fr;
-      align-items: stretch;
-    }
-
-    .result-card {
-      display: flex;
-      flex-direction: column;
-    }
-
-    .rc-formula {
-      margin-top: auto;
-      padding-top: 5px;
-    }
-  }
-
   .result-card {
     background: var(--surface);
     border: 1px solid var(--border);
@@ -447,14 +404,6 @@
     line-height: 1.6;
   }
 
-  /* On wide screens tip sits inside the results panel */
-  @media (min-width: 640px) {
-    .tip {
-      text-align: left;
-      margin-top: 0;
-    }
-  }
-
   footer {
     margin-top: 2.5rem;
     font-size: 11px;
@@ -486,71 +435,63 @@
     <p class="subtitle">Select a plan, enter the raw arrears amount, and calculate grossed-up figures.</p>
   </header>
 
-  <div class="main-layout">
+  <!-- FIX: <p> instead of <span> for semantics -->
+  <p class="section-label">Select plan</p>
+  <div class="plan-grid" id="plan-grid" role="group" aria-label="Select a billing plan"></div>
 
-    <!-- LEFT: input panel -->
-    <div class="input-panel">
-      <p class="section-label">Select plan</p>
-      <div class="plan-grid" id="plan-grid" role="group" aria-label="Select a billing plan"></div>
+  <div class="input-card">
+    <label class="input-label" for="arrears">Raw arrears amount</label>
+    <div class="input-row">
+      <span class="currency-prefix" aria-hidden="true">R</span>
+      <input
+        id="arrears"
+        type="number"
+        inputmode="decimal"
+        min="0.01"
+        max="9999999"
+        step="0.01"
+        placeholder="0.00"
+        autocomplete="off"
+        aria-label="Raw arrears amount in Rand"
+        aria-describedby="error-msg"
+      />
+      <button class="clear-btn" id="clear-btn" aria-label="Clear amount" type="button">&#x2715;</button>
+    </div>
+    <!-- FIX: aria-live so screen readers announce errors -->
+    <div class="error-msg" id="error-msg" role="alert" aria-live="polite"></div>
+    <button class="calc-btn" id="calc-btn" type="button">Calculate</button>
+  </div>
 
-      <div class="input-card">
-        <label class="input-label" for="arrears">Raw arrears amount</label>
-        <div class="input-row">
-          <span class="currency-prefix" aria-hidden="true">R</span>
-          <input
-            id="arrears"
-            type="number"
-            inputmode="decimal"
-            min="0.01"
-            max="9999999"
-            step="0.01"
-            placeholder="0.00"
-            autocomplete="off"
-            aria-label="Raw arrears amount in Rand"
-            aria-describedby="error-msg"
-          />
-          <button class="clear-btn" id="clear-btn" aria-label="Clear amount" type="button">&#x2715;</button>
-        </div>
-        <div class="error-msg" id="error-msg" role="alert" aria-live="polite"></div>
-        <button class="calc-btn" id="calc-btn" type="button">Calculate</button>
+  <div class="plan-banner" id="plan-banner" aria-hidden="true">
+    <span class="dot"></span>
+    <span id="banner-name"></span>
+  </div>
+
+  <!-- FIX: aria-live so screen readers announce new results -->
+  <div class="results-wrap" id="results-wrap" aria-live="polite" aria-atomic="true">
+    <div class="results-grid" id="results-grid">
+      <div class="result-card eft" id="eft-card">
+        <div class="rc-type">Payment type</div>
+        <div class="rc-name">EFT</div>
+        <div class="rc-rate" id="eft-rate"></div>
+        <hr class="rc-divider">
+        <div class="rc-result-label">Arrears figure</div>
+        <div class="rc-amount" id="eft-amount"></div>
+        <div class="rc-formula" id="eft-formula"></div>
+      </div>
+      <div class="result-card third" id="third-card">
+        <div class="rc-type">Payment type</div>
+        <div class="rc-name">3rd Party</div>
+        <div class="rc-rate" id="third-rate"></div>
+        <hr class="rc-divider">
+        <div class="rc-result-label">Arrears figure</div>
+        <div class="rc-amount" id="third-amount"></div>
+        <div class="rc-formula" id="third-formula"></div>
       </div>
     </div>
+  </div>
 
-    <!-- RIGHT: results panel -->
-    <div class="results-panel">
-      <div class="plan-banner" id="plan-banner" aria-hidden="true">
-        <span class="dot"></span>
-        <span id="banner-name"></span>
-      </div>
-
-      <div class="results-wrap" id="results-wrap" aria-live="polite" aria-atomic="true">
-        <div class="results-grid" id="results-grid">
-          <div class="result-card eft" id="eft-card">
-            <div class="rc-type">Payment type</div>
-            <div class="rc-name">EFT</div>
-            <div class="rc-rate" id="eft-rate"></div>
-            <hr class="rc-divider">
-            <div class="rc-result-label">Arrears figure</div>
-            <div class="rc-amount" id="eft-amount"></div>
-            <div class="rc-formula" id="eft-formula"></div>
-          </div>
-          <div class="result-card third" id="third-card">
-            <div class="rc-type">Payment type</div>
-            <div class="rc-name">3rd Party</div>
-            <div class="rc-rate" id="third-rate"></div>
-            <hr class="rc-divider">
-            <div class="rc-result-label">Arrears figure</div>
-            <div class="rc-amount" id="third-amount"></div>
-            <div class="rc-formula" id="third-formula"></div>
-          </div>
-        </div>
-      </div>
-
-      <p class="tip" id="tip">Select a plan above, then enter an amount to calculate.</p>
-    </div>
-
-  </div><!-- /.main-layout -->
-
+  <p class="tip" id="tip">Select a plan above, then enter an amount to calculate.</p>
   <footer>Arrears Calculator &mdash; Internal Use Only</footer>
 
 </div><!-- /.shell -->
