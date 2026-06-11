@@ -1,0 +1,672 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<!-- FIX: removed maximum-scale=1.0 to allow pinch-to-zoom (accessibility) -->
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Arrears Calc">
+<meta name="theme-color" content="#f5f4f0">
+<title>Arrears Calculator</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@400;500&family=DM+Mono&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg:           #f5f4f0;
+    --surface:      #ffffff;
+    --border:       rgba(0,0,0,0.10);
+    --border-strong:rgba(0,0,0,0.18);
+    --text-primary: #1a1916;
+    --text-secondary:#6b6a66;
+    --text-muted:   #a09e99;
+    --blue:         #1a5fa8;
+    --blue-light:   #e8f0fb;
+    --blue-mid:     #4a8fd4;
+    --teal:         #0d6e56;
+    --teal-mid:     #2fa882;
+    --radius:       14px;
+    --radius-sm:    8px;
+    --font-sans:    'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    --font-serif:   'DM Serif Display', Georgia, 'Times New Roman', serif;
+    --font-mono:    'DM Mono', 'Courier New', monospace;
+  }
+
+  html, body {
+    height: 100%;
+    background: var(--bg);
+    font-family: var(--font-sans);
+    color: var(--text-primary);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  body {
+    min-height: 100svh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding-top: env(safe-area-inset-top, 0);
+    padding-bottom: env(safe-area-inset-bottom, 16px);
+    padding-left: env(safe-area-inset-left, 0);
+    padding-right: env(safe-area-inset-right, 0);
+  }
+
+  /* ── SHELL ── */
+  .shell {
+    width: 100%;
+    max-width: 520px;
+    padding: 2rem 1.25rem 3rem;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* ── HEADER ── */
+  header { margin-bottom: 1.75rem; }
+
+  .eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--blue);
+    background: var(--blue-light);
+    padding: 4px 10px;
+    border-radius: 20px;
+    margin-bottom: 0.75rem;
+  }
+
+  .dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--blue-mid);
+    flex-shrink: 0;
+  }
+
+  h1 {
+    font-family: var(--font-serif);
+    font-size: 28px;
+    font-weight: 400;
+    line-height: 1.2;
+    margin-bottom: 0.3rem;
+  }
+
+  .subtitle {
+    font-size: 14px;
+    color: var(--text-secondary);
+    line-height: 1.5;
+  }
+
+  /* ── PLAN SELECTOR ── */
+  .section-label {
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 0.5rem;
+    display: block;
+  }
+
+  .plan-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-bottom: 1rem;
+  }
+
+  .plan-btn:last-child:nth-child(odd) {
+    grid-column: 1 / -1;
+  }
+
+  .plan-btn {
+    background: var(--surface);
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 0.65rem 0.75rem;
+    cursor: pointer;
+    text-align: left;
+    transition: border-color 0.15s, background 0.15s, box-shadow 0.15s;
+    -webkit-tap-highlight-color: transparent;
+    min-height: 44px;
+  }
+
+  .plan-btn:hover { border-color: var(--border-strong); }
+
+  .plan-btn:focus-visible {
+    outline: 2px solid var(--blue-mid);
+    outline-offset: 2px;
+  }
+
+  .plan-btn.active {
+    border-color: var(--blue-mid);
+    background: var(--blue-light);
+    box-shadow: 0 0 0 3px rgba(26,95,168,0.10);
+  }
+
+  .plan-btn-name {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-primary);
+    line-height: 1.3;
+  }
+
+  .plan-btn.active .plan-btn-name { color: var(--blue); }
+
+  .plan-btn-rates {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-top: 3px;
+  }
+
+  .plan-btn.active .plan-btn-rates { color: var(--blue-mid); }
+
+  /* ── INPUT CARD ── */
+  .input-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 1.1rem 1.1rem 1.25rem;
+    margin-bottom: 1rem;
+  }
+
+  .input-label {
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 0.6rem;
+    display: block;
+  }
+
+  .input-row {
+    display: flex;
+    align-items: center;
+    border: 1.5px solid var(--border-strong);
+    border-radius: var(--radius-sm);
+    overflow: hidden;
+    transition: border-color 0.15s, box-shadow 0.15s;
+  }
+
+  .input-row:focus-within {
+    border-color: var(--blue-mid);
+    box-shadow: 0 0 0 3px rgba(26,95,168,0.12);
+  }
+
+  .currency-prefix {
+    padding: 0 14px;
+    font-size: 20px;
+    font-weight: 500;
+    color: var(--text-secondary);
+    background: #f8f7f4;
+    border-right: 1px solid var(--border);
+    height: 54px;
+    display: flex;
+    align-items: center;
+    flex-shrink: 0;
+    user-select: none;
+  }
+
+  #arrears {
+    flex: 1;
+    border: none;
+    outline: none;
+    font-family: var(--font-mono);
+    font-size: 22px;
+    color: var(--text-primary);
+    background: transparent;
+    padding: 0 14px;
+    height: 54px;
+    width: 100%;
+    -webkit-appearance: none;
+    -moz-appearance: textfield;
+    appearance: textfield;
+  }
+
+  #arrears::-webkit-outer-spin-button,
+  #arrears::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+
+  #arrears::placeholder { color: var(--text-muted); }
+
+  .clear-btn {
+    background: none;
+    border: none;
+    padding: 0 14px;
+    cursor: pointer;
+    color: var(--text-muted);
+    font-size: 18px;
+    height: 54px;
+    min-width: 44px;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    transition: color 0.15s;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .clear-btn:hover { color: var(--text-primary); }
+  .clear-btn.visible { display: flex; }
+
+  .error-msg {
+    font-size: 13px;
+    color: #a32d2d;
+    margin-top: 0.5rem;
+    display: none;
+  }
+
+  .calc-btn {
+    width: 100%;
+    height: 52px;
+    background: var(--text-primary);
+    color: #fff;
+    border: none;
+    border-radius: var(--radius-sm);
+    font-family: var(--font-sans);
+    font-size: 15px;
+    font-weight: 500;
+    letter-spacing: 0.01em;
+    cursor: pointer;
+    margin-top: 1rem;
+    transition: background 0.15s, transform 0.1s;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .calc-btn:hover { background: #2e2d2a; }
+  .calc-btn:active { transform: scale(0.98); }
+  .calc-btn:focus-visible { outline: 2px solid var(--blue-mid); outline-offset: 2px; }
+
+  /* ── PLAN BANNER ── */
+  .plan-banner {
+    display: none;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--blue);
+    background: var(--blue-light);
+    border-radius: var(--radius-sm);
+    padding: 8px 12px;
+    margin-bottom: 1rem;
+  }
+
+  .plan-banner.visible { display: flex; }
+
+  /* ── RESULTS ── */
+  .results-wrap {
+    opacity: 0;
+    transform: translateY(8px);
+    transition: opacity 0.25s ease, transform 0.25s ease;
+    pointer-events: none;
+  }
+
+  .results-wrap.visible {
+    opacity: 1;
+    transform: translateY(0);
+    pointer-events: auto;
+  }
+
+  /* ── On wide screens results stack vertically, one per row ── */
+  .results-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+
+  .result-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 1rem 1.1rem 1.2rem;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .result-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+  }
+
+  .result-card.eft::before  { background: var(--blue-mid); }
+  .result-card.third::before { background: var(--teal-mid); }
+
+  .rc-type {
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    margin-bottom: 3px;
+  }
+
+  .eft   .rc-type { color: var(--blue); }
+  .third .rc-type { color: var(--teal); }
+
+  .rc-name {
+    font-family: var(--font-serif);
+    font-size: 17px;
+    font-weight: 400;
+    color: var(--text-primary);
+    margin-bottom: 0.5rem;
+  }
+
+  .rc-rate {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-bottom: 0.65rem;
+  }
+
+  .rc-divider {
+    border: none;
+    border-top: 1px solid var(--border);
+    margin-bottom: 0.65rem;
+  }
+
+  .rc-result-label {
+    font-size: 11px;
+    color: var(--text-muted);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    margin-bottom: 3px;
+  }
+
+  .rc-amount {
+    font-family: var(--font-mono);
+    font-size: 24px;
+    line-height: 1.15;
+    word-break: break-all;
+  }
+
+  .eft   .rc-amount { color: var(--blue); }
+  .third .rc-amount { color: var(--teal); }
+
+  .rc-formula {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-top: 5px;
+    word-break: break-all;
+  }
+
+  .tip {
+    font-size: 13px;
+    color: var(--text-muted);
+    text-align: center;
+    margin-top: 1.25rem;
+    line-height: 1.6;
+  }
+
+  footer {
+    margin-top: 2.5rem;
+    font-size: 11px;
+    color: var(--text-muted);
+    text-align: center;
+    letter-spacing: 0.03em;
+  }
+
+  /* ── RESPONSIVE ── */
+  @media (max-width: 380px) {
+    h1 { font-size: 24px; }
+    .rc-amount { font-size: 19px; }
+    .shell { padding: 1.5rem 1rem 2.5rem; }
+    .plan-btn-name { font-size: 12px; }
+  }
+
+  @media (max-width: 320px) {
+    .plan-grid { grid-template-columns: 1fr; }
+    .results-grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+<div class="shell">
+
+  <header>
+    <div class="eyebrow" aria-hidden="true"><span class="dot"></span> Billing Tool</div>
+    <h1>Arrears Calculator</h1>
+    <p class="subtitle">Select a plan, enter the raw arrears amount, and calculate grossed-up figures.</p>
+  </header>
+
+  <!-- FIX: <p> instead of <span> for semantics -->
+  <p class="section-label">Select plan</p>
+  <div class="plan-grid" id="plan-grid" role="group" aria-label="Select a billing plan"></div>
+
+  <div class="input-card">
+    <label class="input-label" for="arrears">Raw arrears amount</label>
+    <div class="input-row">
+      <span class="currency-prefix" aria-hidden="true">R</span>
+      <input
+        id="arrears"
+        type="number"
+        inputmode="decimal"
+        min="0.01"
+        max="9999999"
+        step="0.01"
+        placeholder="0.00"
+        autocomplete="off"
+        aria-label="Raw arrears amount in Rand"
+        aria-describedby="error-msg"
+      />
+      <button class="clear-btn" id="clear-btn" aria-label="Clear amount" type="button">&#x2715;</button>
+    </div>
+    <!-- FIX: aria-live so screen readers announce errors -->
+    <div class="error-msg" id="error-msg" role="alert" aria-live="polite"></div>
+    <button class="calc-btn" id="calc-btn" type="button">Calculate</button>
+  </div>
+
+  <div class="plan-banner" id="plan-banner" aria-hidden="true">
+    <span class="dot"></span>
+    <span id="banner-name"></span>
+  </div>
+
+  <!-- FIX: aria-live so screen readers announce new results -->
+  <div class="results-wrap" id="results-wrap" aria-live="polite" aria-atomic="true">
+    <div class="results-grid" id="results-grid">
+      <div class="result-card eft" id="eft-card">
+        <div class="rc-type">Payment type</div>
+        <div class="rc-name">EFT</div>
+        <div class="rc-rate" id="eft-rate"></div>
+        <hr class="rc-divider">
+        <div class="rc-result-label">Arrears figure</div>
+        <div class="rc-amount" id="eft-amount"></div>
+        <div class="rc-formula" id="eft-formula"></div>
+      </div>
+      <div class="result-card third" id="third-card">
+        <div class="rc-type">Payment type</div>
+        <div class="rc-name">3rd Party</div>
+        <div class="rc-rate" id="third-rate"></div>
+        <hr class="rc-divider">
+        <div class="rc-result-label">Arrears figure</div>
+        <div class="rc-amount" id="third-amount"></div>
+        <div class="rc-formula" id="third-formula"></div>
+      </div>
+    </div>
+  </div>
+
+  <p class="tip" id="tip">Select a plan above, then enter an amount to calculate.</p>
+  <footer>Arrears Calculator &mdash; Internal Use Only</footer>
+
+</div><!-- /.shell -->
+
+<script>
+(function () {
+  'use strict';
+
+  var PLANS = [
+    { id: 'landlord-1', name: 'Landlord Plan 1', eft: 10, third: 14 },
+    { id: 'landlord-6', name: 'Landlord Plan 6', eft: 6,  third: 10 },
+    { id: 'johan',      name: 'Johan Fleischer',  eft: 8,  third: 12 },
+    { id: 'eagle-blue', name: 'Eagle Blue',        eft: 7,  third: 11 },
+    { id: 'bc',         name: 'BC Plan',           eft: 3,  third: 7  },
+  ];
+
+  var MAX_INPUT = 9999999;
+
+  var planGrid    = document.getElementById('plan-grid');
+  var input       = document.getElementById('arrears');
+  var clearBtn    = document.getElementById('clear-btn');
+  var errorMsg    = document.getElementById('error-msg');
+  var calcBtn     = document.getElementById('calc-btn');
+  var resultsWrap = document.getElementById('results-wrap');
+  var planBanner  = document.getElementById('plan-banner');
+  var bannerName  = document.getElementById('banner-name');
+  var tip         = document.getElementById('tip');
+
+  var selectedPlan = null;
+
+  PLANS.forEach(function (plan) {
+    var btn = document.createElement('button');
+    btn.className = 'plan-btn';
+    btn.type = 'button';
+    btn.dataset.id = plan.id;
+    btn.setAttribute('aria-pressed', 'false');
+    var rateStr = 'EFT ' + plan.eft + '%  |  3rd ' + plan.third + '%';
+    btn.innerHTML =
+      '<div class="plan-btn-name">' + plan.name + '</div>' +
+      '<div class="plan-btn-rates">' + rateStr + '</div>';
+    btn.addEventListener('click', function () { selectPlan(plan.id); });
+    planGrid.appendChild(btn);
+  });
+
+  function selectPlan(id) {
+    selectedPlan = PLANS.find(function (p) { return p.id === id; });
+    document.querySelectorAll('.plan-btn').forEach(function (b) {
+      var active = b.dataset.id === id;
+      b.classList.toggle('active', active);
+      b.setAttribute('aria-pressed', active ? 'true' : 'false');
+    });
+    resultsWrap.classList.remove('visible');
+    planBanner.classList.remove('visible');
+    showTip('Enter an amount and tap Calculate.');
+    clearError();
+  }
+
+  input.addEventListener('input', function () {
+    clearBtn.classList.toggle('visible', input.value.length > 0);
+    clearError();
+  });
+
+  input.addEventListener('keydown', function (e) {
+    if (e.key === 'e' || e.key === 'E' || e.key === '+' || e.key === '-') {
+      e.preventDefault();
+      return;
+    }
+    if (e.key === 'Enter') {
+      input.blur();
+      calculate();
+    }
+  });
+
+  clearBtn.addEventListener('click', clearInput);
+  calcBtn.addEventListener('click', calculate);
+
+  function factor(pct) {
+    return (100 - pct) / 100;
+  }
+
+  function fmt(n) {
+    return 'R\u00a0' + n.toLocaleString('en-ZA', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    });
+  }
+
+  function showError(msg) {
+    errorMsg.textContent = msg;
+    errorMsg.style.display = 'block';
+  }
+
+  function clearError() {
+    errorMsg.textContent = '';
+    errorMsg.style.display = 'none';
+  }
+
+  function showTip(msg) {
+    tip.textContent = msg;
+    tip.style.display = 'block';
+  }
+
+  function hideTip() {
+    tip.style.display = 'none';
+  }
+
+  function clearInput() {
+    input.value = '';
+    clearBtn.classList.remove('visible');
+    resultsWrap.classList.remove('visible');
+    planBanner.classList.remove('visible');
+    clearError();
+    showTip('Enter an amount and tap Calculate.');
+    input.focus();
+  }
+
+  function calculate() {
+    clearError();
+
+    if (!selectedPlan) {
+      showTip('Please select a plan first.');
+      tip.style.color = '#a32d2d';
+      setTimeout(function () { tip.style.color = ''; }, 2000);
+      return;
+    }
+
+    var raw = parseFloat(input.value);
+
+    if (input.value === '' || input.value === null) {
+      showError('Please enter an arrears amount.');
+      resultsWrap.classList.remove('visible');
+      hideTip();
+      return;
+    }
+
+    if (isNaN(raw) || raw <= 0) {
+      showError('Amount must be greater than R0.00.');
+      resultsWrap.classList.remove('visible');
+      hideTip();
+      return;
+    }
+
+    if (raw > MAX_INPUT) {
+      showError('Amount cannot exceed R9,999,999.00.');
+      resultsWrap.classList.remove('visible');
+      hideTip();
+      return;
+    }
+
+    raw = Math.round(raw * 100) / 100;
+
+    var eftF      = factor(selectedPlan.eft);
+    var eftResult = raw / eftF;
+    document.getElementById('eft-rate').textContent    = selectedPlan.eft + '%  \u00b7  factor ' + eftF.toFixed(2);
+    document.getElementById('eft-amount').textContent  = fmt(eftResult);
+    document.getElementById('eft-formula').textContent = fmt(raw) + ' \u00f7 ' + eftF.toFixed(2);
+
+    var thirdF      = factor(selectedPlan.third);
+    var thirdResult = raw / thirdF;
+    document.getElementById('third-rate').textContent    = selectedPlan.third + '%  \u00b7  factor ' + thirdF.toFixed(2);
+    document.getElementById('third-amount').textContent  = fmt(thirdResult);
+    document.getElementById('third-formula').textContent = fmt(raw) + ' \u00f7 ' + thirdF.toFixed(2);
+
+    bannerName.textContent = selectedPlan.name;
+    planBanner.classList.add('visible');
+    planBanner.removeAttribute('aria-hidden');
+    resultsWrap.classList.add('visible');
+    hideTip();
+
+    setTimeout(function () {
+      resultsWrap.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }, 50);
+  }
+
+})();
+</script>
+</body>
+</html>
